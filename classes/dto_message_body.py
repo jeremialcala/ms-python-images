@@ -15,3 +15,5 @@ log = logging.getLogger(settings.environment)
 class MessageBody(BaseModel):
     fileName: str
     data: str
+
+
