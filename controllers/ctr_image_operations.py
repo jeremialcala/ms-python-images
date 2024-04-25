@@ -3,7 +3,7 @@ from PIL import Image
 import base64, binascii
 import io
 from uuid import uuid4, UUID
-from classes import ImageData, MessageBody, Settings
+from classes import ImageData, MessageBody, Settings, ResponseData
 from inspect import currentframe
 from utils import is_base64
 
@@ -11,8 +11,9 @@ settings = Settings()
 log = logging.getLogger(settings.environment)
 
 
-async def ctr_store_new_image(msg: MessageBody, _uuid: UUID = uuid4()):
+async def ctr_store_new_image(msg: MessageBody, _uuid: UUID = uuid4()) -> ResponseData:
     log.info(f"Starting {currentframe().f_code.co_name}")
+    resp = ResponseData(uuid=_uuid, code=500, message="SOME INTERNAL ERROR")
     try:
         if is_base64(msg.data):
             image_bytes = base64.b64decode(msg.data, validate=True)
@@ -27,12 +28,17 @@ async def ctr_store_new_image(msg: MessageBody, _uuid: UUID = uuid4()):
                 imageMode=image.mode,
                 imageFormat=image.format_description
             ).save()
+            resp = ResponseData(code=200, message="PROCESS COMPLETED SUCCESSFULLY")
 
     except binascii.Error as e:
-        log.error(f"we have problems with the bytes? ---> {e.__str__()}")
+        resp = ResponseData(code=500, message=f"we have problems with the bytes? ---> {e.__str__()}")
+        log.error(resp.message)
     except Exception as e:
-        log.error(f"this is an error ---> {e.__str__()}" )
-    log.info(f"{currentframe().f_code.co_name} finish")
+        resp = ResponseData(code=500, message=f"this is an error ---> {e.__str__()}")
+        log.error(resp.message)
+    finally:
+        log.info(f"{currentframe().f_code.co_name} finish response code: {resp.code}")
+        return resp
 
 
 
