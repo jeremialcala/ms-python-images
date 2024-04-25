@@ -3,6 +3,7 @@ import pika
 import threading
 import logging.config
 import functools
+import asyncio
 
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -10,15 +11,14 @@ from asyncio import ensure_future
 from typing import List, Literal, Optional, Tuple, TypedDict
 
 from inspect import currentframe
-from classes import Settings, MessageBody
+from classes import Settings, MessageBody, ResponseData
 
 from utils import configure_logging
+from .ctr_image_operations import ctr_store_new_image
 
 _set = Settings()
 log = logging.getLogger(__name__)
 logging.config.dictConfig(configure_logging())
-
-Role = Literal["system", "user", "assistant"]
 
 
 def get_amqp_connection():
@@ -42,14 +42,20 @@ def on_message(_channel, method_frame, header_frame, body, args):
 def do_work(connection, channel, delivery_tag, body):
     thread_id = threading.get_ident()
     fmt1 = 'Thread id: {} Delivery tag: {} Message body: {}'
-    log.info(fmt1.format(thread_id, delivery_tag, body))
+    log.debug(fmt1.format(thread_id, delivery_tag, body))
     _body = json.loads(body.decode("utf-8"))
 
     try:
         # TODO: make this message body jwe, got some issues with the key management
-        # msg = MessageBody(_body)
-        cb = functools.partial(ack_message, channel, delivery_tag)
-        connection.add_callback_threadsafe(cb)
+
+        msg = MessageBody.from_jwe_body(_body)
+        _uuid = UUID(_body["eventId"])
+
+        resp = asyncio.run(ctr_store_new_image(msg=msg, _uuid=_uuid))
+
+        if resp.code == 200:
+            cb = functools.partial(ack_message, channel, delivery_tag)
+            connection.add_callback_threadsafe(cb)
 
     except Exception as e:
         log.error(e.__str__())

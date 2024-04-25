@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     qms_server: str
     qms_user: str
     qms_password: str
+    queue_name: str
+    amqp_exchange: str
+    amqp_routing_key: str
 
     key_size: int
     private_key_filename: str
@@ -30,11 +33,5 @@ class Settings(BaseSettings):
 
     environment: str
     version: str
-
-    verify_token: str
-
-    facebook_graph_url: str
-    facebook_whatsapp_message: str
-    facebook_graph_version: str
 
     model_config = SettingsConfigDict(env_file="config.env")

@@ -16,4 +16,6 @@ class MessageBody(BaseModel):
     fileName: str
     data: str
 
-
+    @staticmethod
+    def from_jwe_body(body):
+        return MessageBody(fileName=body["jwe_body"]["fileName"], data=body["jwe_body"]["data"])

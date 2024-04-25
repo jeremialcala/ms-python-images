@@ -25,7 +25,7 @@ async def ctr_store_new_image(msg: MessageBody, _uuid: UUID = uuid4()) -> Respon
                 imageData=msg.data,
                 imageType=image.format,
                 imageFilename=msg.fileName,
-                imageSize=image.size,
+                imageSize=image.size.__str__(),
                 imageMode=image.mode,
                 imageFormat=image.format_description
             ).save()
