@@ -1,18 +1,14 @@
-import json
-import pika
-import threading
-import logging.config
-import functools
 import asyncio
-
-from datetime import datetime
-from uuid import UUID, uuid4
-from asyncio import ensure_future
-from typing import List, Literal, Optional, Tuple, TypedDict
-
+import functools
+import json
+import logging.config
+import threading
 from inspect import currentframe
-from classes import Settings, MessageBody, ResponseData
+from uuid import UUID
 
+import pika
+
+from classes import Settings, MessageBody
 from utils import configure_logging
 from .ctr_image_operations import ctr_store_new_image
 
@@ -42,18 +38,16 @@ def on_message(_channel, method_frame, header_frame, body, args):
 def do_work(connection, channel, delivery_tag, body):
     thread_id = threading.get_ident()
     fmt1 = 'Thread id: {} Delivery tag: {} Message body: {}'
-    log.debug(fmt1.format(thread_id, delivery_tag, body))
+    # log.debug(fmt1.format(thread_id, delivery_tag, body))
     _body = json.loads(body.decode("utf-8"))
 
     try:
         # TODO: make this message body jwe, got some issues with the key management
-
         msg = MessageBody.from_jwe_body(_body)
         _uuid = UUID(_body["eventId"])
-
         resp = asyncio.run(ctr_store_new_image(msg=msg, _uuid=_uuid))
 
-        if resp.code == 200:
+        if resp.code == 200 or resp.code == 203:
             cb = functools.partial(ack_message, channel, delivery_tag)
             connection.add_callback_threadsafe(cb)
 
@@ -72,4 +66,3 @@ def ack_message(channel, delivery_tag):
         # Channel is already closed, so we can't ACK this message;
         # log and/or do something that makes sense for your app in this case.
         pass
-

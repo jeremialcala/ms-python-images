@@ -3,6 +3,7 @@ from logging import config
 from PIL import Image
 import base64, binascii
 import io
+from mongoengine.errors import NotUniqueError
 from uuid import uuid4, UUID
 from classes import ImageData, MessageBody, Settings, ResponseData
 from inspect import currentframe
@@ -31,6 +32,9 @@ async def ctr_store_new_image(msg: MessageBody, _uuid: UUID = uuid4()) -> Respon
             ).save()
             resp = ResponseData(code=200, message="PROCESS COMPLETED SUCCESSFULLY")
 
+    except NotUniqueError as e:
+        resp = ResponseData(code=203, message=f"This image already exists ---> {e.__str__()}")
+        log.error(resp.message)
     except binascii.Error as e:
         resp = ResponseData(code=500, message=f"we have problems with the bytes? ---> {e.__str__()}")
         log.error(resp.message)

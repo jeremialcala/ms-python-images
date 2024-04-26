@@ -23,9 +23,9 @@ connect(
 
 class ImageData(Document):
     _uuid = UUIDField(required=True, unique=True, default=uuid4())
-    imageData = StringField()
+    imageData = StringField(required=True, unique=True)
     imageType = StringField()  # This will have the base64encoded data
-    imageFilename = StringField()
+    imageFilename = StringField(required=True, unique=True)
     imageSize = StringField()
     imageMode = StringField()
     imageFormat = StringField()
